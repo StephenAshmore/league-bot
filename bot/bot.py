@@ -41,7 +41,7 @@ class Bot(object):
                    event_type == 'member_left_channel'):
                     self.channel_users = self._client.api_call("users.list")
 
-            time.sleep(1)
+            time.sleep(0.25)
 
     def handle_message(self, event):
         # ignore edits
@@ -49,8 +49,9 @@ class Bot(object):
         if subtype == u'message_changed':
             return
 
-        if ('text' in event.keys() and
-           event['text'].startswith('<@{}>'.format(self.bot_id))):
+        if ('text' in event.keys() and (
+           event['text'].startswith('<@{}>'.format(self.bot_id))
+           or event['text'].startswith('lb'))):
             botname = 'league_bot'
             if 'user' in event.keys():
                 userid = event['user']
@@ -90,8 +91,8 @@ class Bot(object):
                             league_name = commands[1]
                         else:
                             league_name = default_name
-                        self.current_league = League(name)
-                        reply = 'League "{}" created. Please say @league_bot join <team name> to register.'.format(league_name)
+                        self.current_league = League(league_name)
+                        reply = 'League "{}" created. Please say @league_bot join <team name> to register.'.format(self.current_league.name)
                 elif main_command == 'join':
                     if (self.current_league is None or
                         self.current_league.started):

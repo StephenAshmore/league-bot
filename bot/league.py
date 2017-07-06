@@ -63,11 +63,13 @@ class League(object):
                 p['goalsFor'] += int(score2)
                 p['goalsAgainst'] += int(score1)
         # Find the game in the games list and remove it.
-        for i, g in self.games.items():
+        i = 0
+        for g in self.games:
             if where == 'home' and g['home'] == winner and g['away'] == loser:
                 del self.games[i]
             elif where == 'away' and g['away'] == winner and g['home'] == loser:
                 del self.games[i]
+            i += 1
 
     def tie(self, winner, loser, score1, score2, where):
         self.played.append(dict(winner=winner,
@@ -96,15 +98,16 @@ class League(object):
     def show_table(self):
         table = '```'
         table += self.name + ' League Table:\n'
-        table += '*Name*: PL | W | D | L | GF | GA | GD | PTS\n'
-        table_players = sorted(self.players, key=lambda k: k['points'])
+        table += '{:16}:{:^5}|{:^5}|{:^5}|{:^5}|{:^5}|{:^5}|{:^5}|{:^5}\n'.format('Name', 'PL', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'PTS')
+        table_players = sorted(self.players, key=lambda k: k['points'], reverse=True)
         for p in table_players:
-            table += '*' + p['name'] + '*: '
-            table += p['games'] + ' ' + p['wins']
-            table += ' ' + p['ties'] + ' ' + p['losses']
-            table += ' ' + p['goalsFor'] + ' ' + p['goalsAgainst']
-            table += ' ' + str(int(p['goalsFor']) - int(p['goalsAgainst']))
-            table += ' ' + p['points']
+            goal_differential = int(p['goalsFor']) - int(p['goalsAgainst'])
+            table += '{:16}:'.format(p['name'])
+            table += '{:^5}|{:^5}'.format(p['games'], p['wins'])
+            table += '|{:^5}|{:^5}'.format(p['ties'], p['losses'])
+            table += '|{:^5}|{:^5}'.format(p['goalsFor'], p['goalsAgainst'])
+            table += '|{:^5}'.format(goal_differential)
+            table += '|{:^5}'.format(p['points'])
             table += '\n'
         table += '```'
         return table

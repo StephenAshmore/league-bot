@@ -76,7 +76,7 @@ class Bot(object):
                 elif main_command == 'league':
                     if cmd_len > 1 and commands[1] == 'start':
                         if self.current_league is None:
-                            reply = '<@{}> you must create a league first. Use @league_bot league [league name].'.format(userid)
+                            reply = '<@{}> you must create a league first. Use lb league [league name].'.format(userid)
                         elif self.current_league.started:
                             reply = '<@{}> there is already a league happening.'.format(userid)
                         else:
@@ -84,7 +84,7 @@ class Bot(object):
                             if success:
                                 reply = '<@{}> League has been started, table has been generated!.'.format(userid)
                             else:
-                                reply = '<@{}> Looks like you don\'t have enough players! Try an ad hoc game with @league_bot challenge <opponent>.'.format(userid)
+                                reply = '<@{}> Looks like you don\'t have enough players! Try an ad hoc game with lb challenge <opponent>.'.format(userid)
                     else:
                         default_name = 'League ' + str(self.league_count + 1)
                         if cmd_len > 1:
@@ -92,7 +92,7 @@ class Bot(object):
                         else:
                             league_name = default_name
                         self.current_league = League(league_name)
-                        reply = 'League "{}" created. Please say @league_bot join <team name> to register.'.format(self.current_league.name)
+                        reply = 'League "{}" created. Please say lb join <team name> to register.'.format(self.current_league.name)
                 elif main_command == 'join':
                     if (self.current_league is None or
                         self.current_league.started):
@@ -106,7 +106,7 @@ class Bot(object):
                 elif main_command == 'help':
                     reply = 'League Bot Help Menu:\n'
                     reply += '```'
-                    reply += 'League bot uses the format: @league_bot <commands>. The following commands are available:\n'
+                    reply += 'League bot uses the format: lb <commands>. The following commands are available:\n'
                     reply += 'help: Displays this help message.\n'
                     reply += 'league [league name]: Creates a league with optional league name.\n'
                     reply += 'league start: Starts the league with the joined players, and creates the league table.\n'
@@ -119,6 +119,9 @@ class Bot(object):
                     reply += 'games: See the games left to play in the league.\n'
                     reply += 'leaderboard: See the leaderboard for all players.\n'
                     reply += 'profile: See the details of your profile.\n'
+                    reply += 'challenge <opponent>: Challenge an opponent to an ad hoc game.\n'
+                    reply += 'challenge lost <opponent> <your score>:<their score>\n'
+                    reply += 'challenge won <opponent> <your score>:<their score>\n'
                     reply += '```'
                 elif main_command == 'lost':
                     if cmd_len != 4:
@@ -137,6 +140,11 @@ class Bot(object):
                                 where = 'away'
                             else:
                                 where = 'home'
+                            score1 = score[0]
+                            score2 = score[1]
+                            if score1 > score2:
+                                score2 = score[0]
+                                score1 = score[1]
                             self.current_league.win(commands[1], name, score[1],
                                                     score[0], where)
                             winner.win()
@@ -154,6 +162,11 @@ class Bot(object):
                         else:
                             score = commands[2].split(':')
                             # Need game validation here.
+                            score1 = score[0]
+                            score2 = score[1]
+                            if score1 < score2:
+                                score2 = score[0]
+                                score1 = score[1]
                             self.current_league.win(name, commands[1], score[0],
                                                     score[1], commands[3])
                             winner.win()
@@ -172,6 +185,59 @@ class Bot(object):
                         reply = reply2
                     else:
                         reply = 'Whoops <@{}> you aren\'t registered!'.format(userid)
+                elif main_command == 'challenge':
+                    if cmd_len > 2:
+                        # This is for win or lose:
+                        if commands[2] == 'lost':
+                            if cmd_len != 4:
+                                reply = 'Whoops, the format for lost must be:\n```lost <opponent> <your score>:<opponent score> <home|away>\n```'
+                            else:
+                                winner = self.getPlayer(commands[1])
+                                loser = self.getPlayer(name)
+
+                                if commands[2].find(':') == -1:
+                                    reply = 'Whoops, the format for the scores in command lost must be:\n```<your score>:<opponent score>\n```'
+                                else:
+                                    score = commands[2].split(':')
+                                    # Need game validation here.
+                                    where = ''
+                                    if commands[3] == 'home':
+                                        where = 'away'
+                                    else:
+                                        where = 'home'
+                                    score1 = score[0]
+                                    score2 = score[1]
+                                    if score1 > score2:
+                                        score2 = score[0]
+                                        score1 = score[1]
+                                    self.current_league.win(commands[1], name, score[1],
+                                                            score[0], where)
+                                    winner.win()
+                                    loser.lose()
+                                    reply = 'Sorry you lost <@{}>! Match recorded.'.format(userid)
+                        elif commands[2] == 'win':
+                            if cmd_len != 4:
+                                reply = 'Whoops, the format for won must be:\n```won <opponent> <your score>:<opponent score> <home|away>\n```'
+                            else:
+                                winner = self.getPlayer(name)
+                                loser = self.getPlayer(commands[1])
+
+                                if commands[2].find(':') == -1:
+                                    reply = 'Whoops, the format for the scores in command won must be:\n```<your score>:<opponent score>\n```'
+                                else:
+                                    score = commands[2].split(':')
+
+                                    winner.win()
+                                    loser.lose()
+                                    reply = 'Congrats <@{}>! Match recorded.'.format(userid)
+                    else:
+                        # Create a challenge!
+                        if cmd_len == 2:
+                            opponentid = self.get_id_from_name(commands[1])
+                            if opponentid is not None:
+                                reply = '<@{}> has challenged <@{}>!'.format(userid, opponentid)
+                            else:
+                                reply = '<@{}> that user does not exist.'.format(userid)
 
                 self._client.api_call(
                   "chat.postMessage",

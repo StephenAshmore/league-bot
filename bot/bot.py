@@ -13,11 +13,6 @@ slack_token = None
 with open('environment.txt', 'r') as env_file:
     slack_token = env_file.read()
 
-# TODO:
-# admin command to load a current league
-# Save and Load commands for players, essentially save or load the entire array.
-# On startup load all the leagues and players that we can find.
-
 class Bot:
     def __init__(self):
         if slack_token is None:
@@ -334,6 +329,13 @@ class Bot:
                   channel=event['channel'],
                   text=reply
                 )
+
+                if shouldSave:
+                    if self.checkForLeague():
+                        self.current_league.saveData()
+                if shouldSavePlayer:
+                    for p in self.players:
+                        p.saveData()
 
     def getPlayer(self, player):
         for p in self.players:

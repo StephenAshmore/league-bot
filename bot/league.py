@@ -45,6 +45,12 @@ class League(object):
                         self.games.append(dict(home=p['name'], away=o['name']))
         return self.started
 
+    def isFinished(self):
+        if len(self.games) > 0:
+            return False
+        else:
+            return True
+
     def win(self, winner, loser, score1, score2, where):
         self.played.append(dict(winner=winner,
                                 loser=loser,
@@ -122,13 +128,13 @@ class League(object):
 
         return reply
 
-    def load(filename):
-        with open('strings.json') as json_data:
-            d = json.load(json_data)
-            return jsonpickle.decode(d)
-        return League()
+    def loadData(filename):
+        with open('/leagues/' + filename) as json_data:
+            # d = json.load(json_data)
+            return jsonpickle.decode(json_data)
+        return League('Empty loaded league')
 
-    def save(self):
+    def saveData(self):
         j = jsonpickle.encode(self)
-        with open(self.name + '.json', "w") as text_file:
+        with open('/leagues/' + self.name + '.json', "w+") as text_file:
             text_file.write(j)

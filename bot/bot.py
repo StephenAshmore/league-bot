@@ -1,20 +1,28 @@
 from slackclient import SlackClient
 
 import logging
-import sys
-import os
-import re
 import time
+from os import walk
+
 
 from league import League
 from player import Player
 
 logger = logging.getLogger(__name__)
-slack_token = os.environ["SLACK_API_TOKEN"]
+slack_token = None
+with open('environment.txt', 'r') as env_file:
+    slack_token = env_file.read()
 
+# TODO:
+# admin command to load a current league
+# Save and Load commands for players, essentially save or load the entire array.
+# On startup load all the leagues and players that we can find.
 
-class Bot(object):
+class Bot:
     def __init__(self):
+        if slack_token is None:
+            print('Failed to get the slack token. Exiting...')
+            exit(30)
         self._client = SlackClient(
             slack_token,
         )
@@ -22,6 +30,27 @@ class Bot(object):
         self.current_league = None
         self.league_count = 0
         self.players = []
+        for (dirpath, dirnames, filenames) in walk('leagues/'):
+            for f in filenames:
+                l = League.loadData(f)
+                if not l.isFinished:
+                    self.current_league = l
+                else:
+                    self.previous_leagues.append(l)
+            break
+        
+        for (dirpath, dirnames, filenames) in walk('players/'):
+            for f in filenames:
+                p = Player.loadData(f)
+                self.players.append(p)
+            break
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        print('Exiting...')
+        if self.checkForLeague():
+            self.current_league.saveData()
+        for p in self.players:
+            p.saveData()
 
     def run(self):
         print('Booting League Bot..')
@@ -43,8 +72,16 @@ class Bot(object):
 
             time.sleep(0.25)
 
+    def checkForLeague(self):
+        if self.current_league:
+            return True
+        else:
+            return False
+
     def handle_message(self, event):
         # ignore edits
+        shouldSave = False
+        shouldSavePlayer = False
         subtype = event.get('subtype', '')
         if subtype == u'message_changed':
             return
@@ -69,7 +106,7 @@ class Bot(object):
                 main_command = commands[0]
 
                 if main_command == 'table':
-                    if self.current_league is not None:
+                    if self.checkForLeague():
                         reply = self.current_league.show_table()
                     else:
                         reply = '<@{}> there is no current league, start one!'.format(userid)
@@ -82,26 +119,34 @@ class Bot(object):
                         else:
                             success = self.current_league.start()
                             if success:
+                                shouldSave = True
                                 reply = '<@{}> League has been started, table has been generated!.'.format(userid)
                             else:
                                 reply = '<@{}> Looks like you don\'t have enough players! Try an ad hoc game with lb challenge <opponent>.'.format(userid)
                     else:
-                        default_name = 'League ' + str(self.league_count + 1)
-                        if cmd_len > 1:
-                            league_name = commands[1]
+                        if self.checkForLeague() and not self.current_league.isFinished():
+                            reply = '<@{}> there is already a league in progress!'
                         else:
-                            league_name = default_name
-                        self.current_league = League(league_name)
-                        reply = 'League "{}" created. Please say lb join <team name> to register.'.format(self.current_league.name)
+                            default_name = 'League ' + str(self.league_count + 1)
+                            if cmd_len > 1:
+                                league_name = commands[1]
+                            else:
+                                league_name = default_name
+                            self.current_league = League(league_name)
+                            shouldSave = True
+                            reply = 'League "{}" created. Please say lb join <team name> to register.'.format(self.current_league.name)
                 elif main_command == 'join':
-                    if (self.current_league is None or
+                    if (not self.checkForLeague() or
                         self.current_league.started):
                         reply = '<@{}>, the current league is closed.'.format(userid)
                     else:
                         self.current_league.add_player(self.confirm_player(name))
+                        shouldSave = True
                         reply = '<@{}> you\'ve joined the current league!'.format(userid)
                 elif main_command == 'register':
                     self.players.append(Player(name))
+                    shouldSavePlayer = True
+                    print('Player registered. {}'.format(shouldSavePlayer))
                     reply = '<@{}>, you\'ve been registered to play.'.format(userid)
                 elif main_command == 'help':
                     reply = 'League Bot Help Menu:\n'
@@ -145,11 +190,14 @@ class Bot(object):
                             if score1 > score2:
                                 score2 = score[0]
                                 score1 = score[1]
-                            self.current_league.win(commands[1], name, score[1],
-                                                    score[0], where)
+                            if self.checkForLeague():
+                                self.current_league.win(commands[1], name, score[1],
+                                                        score[0], where)
                             winner.win()
                             loser.lose()
                             reply = 'Sorry you lost <@{}>! Match recorded.'.format(userid)
+                            shouldSave = True
+                            shouldSavePlayer = True
                 elif main_command == 'won':
                     if cmd_len != 4:
                         reply = 'Whoops, the format for won must be:\n```won <opponent> <your score>:<opponent score> <home|away>\n```'
@@ -167,22 +215,55 @@ class Bot(object):
                             if score1 < score2:
                                 score2 = score[0]
                                 score1 = score[1]
-                            self.current_league.win(name, commands[1], score[0],
-                                                    score[1], commands[3])
+                            if self.checkForLeague():
+                                self.current_league.win(name, commands[1], score[0],
+                                                        score[1], commands[3])
                             winner.win()
                             loser.lose()
                             reply = 'Congrats <@{}>! Match recorded.'.format(userid)
+                            shouldSave = True
+                            shouldSavePlayer = True
                 elif main_command == 'tie':
-                    reply = 'Close game <@{}>! Match recorded.'.format(userid)
+                    if cmd_len != 4:
+                        reply = 'Whoops, the format for tie must be:\n```tie <opponent> <your score>:<opponent score> <home|away>\n```'
+                    else:
+                        winner = self.getPlayer(name)
+                        loser = self.getPlayer(commands[1])
+
+                        if commands[2].find(':') == -1:
+                            reply = 'Whoops, the format for the scores in command tie must be:\n```<your score>:<opponent score>\n```'
+                        else:
+                            score = commands[2].split(':')
+                            # Need game validation here.
+                            score1 = score[0]
+                            score2 = score[1]
+                            if score1 < score2:
+                                score2 = score[0]
+                                score1 = score[1]
+                            if self.checkForLeague():
+                                self.current_league.tie(name, commands[1], score[0],
+                                                        score[1], commands[3])
+                            winner.tie()
+                            loser.tie()
+                            reply = 'Its a tie <@{}>! Match recorded.'.format(userid)
+                            shouldSave = True
+                            shouldSavePlayer = True
                 elif main_command == 'games':
-                    reply = self.current_league.getGames()
+                    if self.checkForLeague():
+                        reply = self.current_league.getGames()
+                    else:
+                        reply = 'There is no current league to get games for. Try to make one with lb league'
                 elif main_command == 'test_register' and name == 'stephen':
-                    self.current_league.add_player(self.confirm_player(commands[1]))
+                    if self.checkForLeague():
+                        self.current_league.add_player(self.confirm_player(commands[1]))
                     reply = ''
                 elif main_command == 'profile':
-                    reply2 = self.getPlayer(name).profile()
-                    if reply2:
-                        reply = reply2
+                    if self.getPlayer(name):
+                        reply2 = self.getPlayer(name).profile()
+                        if reply2:
+                            reply = reply2
+                        else:
+                            reply = 'Whoops <@{}> you aren\'t registered!'.format(userid)
                     else:
                         reply = 'Whoops <@{}> you aren\'t registered!'.format(userid)
                 elif main_command == 'challenge':
@@ -238,6 +319,15 @@ class Bot(object):
                                 reply = '<@{}> has challenged <@{}>!'.format(userid, opponentid)
                             else:
                                 reply = '<@{}> that user does not exist.'.format(userid)
+                elif main_command == 'save':
+                    print('Saving...')
+                    if self.checkForLeague():
+                        self.current_league.saveData()
+                    for p in self.players:
+                        p.saveData()
+                    for l in self.previous_leagues:
+                        l.saveData()
+                    reply = 'Saving all player and league data.'
 
                 self._client.api_call(
                   "chat.postMessage",

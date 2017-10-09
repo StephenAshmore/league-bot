@@ -28,7 +28,9 @@ class Player(object):
     def profile(self):
         wins = self.number_wins
         loses = self.number_games - self.number_wins
-        ratio = wins / self.number_games
+        ratio = 0
+        if self.number_games > 0:
+            ratio = wins / self.number_games
         reply = '```Player {}\'s Profile:\n'.format(self.name)
         reply += 'Wins: {}. Losses: {}. Ratio: {}\n'.format(wins, loses, ratio)
         reply += 'Total Games Played: {}'.format(self.number_games)
@@ -37,13 +39,19 @@ class Player(object):
         reply += '```'
         return reply
 
-    def load(filename):
-        with open('strings.json') as json_data:
-            d = json.load(json_data)
+    def loadData(filename):
+        with open('/players/' + filename) as json_data:
+            print(json_data)
+            d = json.dumps(json.load(json_data))
+            print(d)
             return jsonpickle.decode(d)
-        return Player()
+        return Player('Failed to load')
 
-    def save(self):
+    def saveData(self):
+        print('Saving a player in player.save()')
         j = jsonpickle.encode(self)
-        with open(self.name + '.json', "w") as text_file:
+        print('Saving player {} with data {}'.format(self.name, j))
+        with open('/players/' + self.name + '.json', "w+") as text_file:
             text_file.write(j)
+            print('Data written.')
+        print('Done saving.')

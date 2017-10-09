@@ -1,3 +1,10 @@
+# Ignore Environment Variable files:
+environment.txt
+
+league-bot/
+players/
+leagues/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

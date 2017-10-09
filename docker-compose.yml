@@ -3,6 +3,10 @@ version: "2"
 services:
     bot:
         build: .
-        command: python main.py
+        command: python -u main.py
+        volumes:
+            - ./bot:/bot
+            - ./leagues:/leagues
+            - ./players:/players
         environment:
             - MODE=dev

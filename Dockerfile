@@ -1,4 +1,4 @@
-FROM python:2.7
+FROM python:3.6
 
 # Copying the requirements for installation to take
 # advantage of the caching.

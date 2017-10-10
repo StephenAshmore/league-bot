@@ -24,7 +24,7 @@ class League(object):
 
     def add_player(self, player, teamName):
         for p in self.players:
-            if p['name'] == player['name']:
+            if p['name'] == player:
                 return False
 
         self.players.append(dict(

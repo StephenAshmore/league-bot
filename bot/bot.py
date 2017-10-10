@@ -269,7 +269,7 @@ class Bot:
                         reply = 'There is no current league to get games for. Try to make one with lb league'
                 elif main_command == 'test_register' and name == 'stephen':
                     if self.checkForLeague():
-                        self.current_league.add_player(self.confirm_player(commands[1]))
+                        self.current_league.add_player(self.confirm_player(commands[1]), 'Test Team')
                     reply = ''
                 elif main_command == 'profile':
                     if self.getPlayer(name):

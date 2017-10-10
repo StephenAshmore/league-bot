@@ -373,13 +373,19 @@ class Bot:
 
 #TODO: Add ability to look at previous leagues.
 
+
+    # TODO: Get player from @name as well.
     def getPlayer(self, player):
+        if player.startswith('@'):
+            player = player[1:]
         for p in self.players:
             if p.name == player:
                 return p
         return None
 
     def confirm_player(self, name):
+        if name.startswith('@'):
+            name = name[1:]
         for p in self.players:
             if p.name == name:
                 p.leagues.append(self.current_league.name)
@@ -396,6 +402,8 @@ class Bot:
         return None
 
     def get_id_from_name(self, name):
+        if name.startswith('@'):
+            name = name[1:]
         for user in self.channel_users['members']:
             if name == user['name']:
                 return user['id']

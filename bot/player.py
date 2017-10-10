@@ -35,7 +35,7 @@ class Player(object):
         reply += 'Wins: {}. Losses: {}. Ratio: {}\n'.format(wins, loses, ratio)
         reply += 'Total Games Played: {}'.format(self.number_games)
         reply += ' Total Leagues Played: {}\n'.format(self.number_leagues)
-        reply += 'Your ELO is {}.\n'.format(self.elo)
+        # reply += 'Your ELO is {}.\n'.format(self.elo)
         reply += '```'
         return reply
 

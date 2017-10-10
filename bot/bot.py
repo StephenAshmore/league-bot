@@ -77,6 +77,7 @@ class Bot:
         # ignore edits
         shouldSave = False
         shouldSavePlayer = False
+        leagueFinished = False
         subtype = event.get('subtype', '')
         if subtype == u'message_changed':
             return
@@ -188,6 +189,7 @@ class Bot:
                             if self.checkForLeague():
                                 self.current_league.win(commands[1], name, score[1],
                                                         score[0], where)
+                                leagueFinished = self.current_league.isFinished()
                             winner.win()
                             loser.lose()
                             reply = 'Sorry you lost <@{}>! Match recorded.'.format(userid)
@@ -213,6 +215,7 @@ class Bot:
                             if self.checkForLeague():
                                 self.current_league.win(name, commands[1], score[0],
                                                         score[1], commands[3])
+                                leagueFinished = self.current_league.isFinished()
                             winner.win()
                             loser.lose()
                             reply = 'Congrats <@{}>! Match recorded.'.format(userid)
@@ -238,6 +241,7 @@ class Bot:
                             if self.checkForLeague():
                                 self.current_league.tie(name, commands[1], score[0],
                                                         score[1], commands[3])
+                                leagueFinished = self.current_league.isFinished()
                             winner.tie()
                             loser.tie()
                             reply = 'Its a tie <@{}>! Match recorded.'.format(userid)
@@ -325,9 +329,9 @@ class Bot:
                     reply = 'Saving all player and league data.'
 
                 self._client.api_call(
-                  "chat.postMessage",
-                  channel=event['channel'],
-                  text=reply
+                    "chat.postMessage",
+                    channel=event['channel'],
+                    text=reply
                 )
 
                 if shouldSave:
@@ -336,6 +340,23 @@ class Bot:
                 if shouldSavePlayer:
                     for p in self.players:
                         p.saveData()
+                if leagueFinished:
+                    # Create a chat message that either shows the winner, or has a play off match for first place.
+                    reply = self.current_league.winner()
+
+                    self._client.api_call(
+                        "chat.postMessage",
+                        channel=event['channel'],
+                        text=reply
+                    )
+
+                    # double check if the league had a tie before archiving it:
+                    if self.current_league.isFinished():
+                        # then archive the current league in the previous leagues
+                        self.previous_leagues.append(self.current_league)
+                        self.current_league = None
+
+#TODO: Add ability to look at previous leagues.
 
     def getPlayer(self, player):
         for p in self.players:

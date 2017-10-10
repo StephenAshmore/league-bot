@@ -126,6 +126,9 @@ class League(object):
             reply += g['away']
             reply += '[Away]\n'
 
+        if reply == '':
+            reply = 'The league has ended, there are no more games to play.'
+
         return reply
 
     def loadData(filename):
@@ -138,3 +141,14 @@ class League(object):
         j = jsonpickle.encode(self)
         with open('/leagues/' + self.name + '.json', "w+") as text_file:
             text_file.write(j)
+
+    def winner(self):
+        if self.isFinished():
+            table_players = sorted(self.players, key=lambda k: k['points'], reverse=True)
+            if table_players[0]['points'] == table_players[1]['points']:
+                # need a playoff game
+                self.games.append(dict(home=table_players[0]['name'],
+                                       away=table_players[1]['name']))
+                return 'There is a tie for first place between: {} and {}. A playoff game has been scheduled.'.format(table_players[0]['name'], table_players[1]['name'])
+            else:
+                return '{} has won the league with {} points!'.format(table_players[0]['name'], table_players[0]['points'])

@@ -28,7 +28,7 @@ class Bot:
         for (dirpath, dirnames, filenames) in walk('leagues/'):
             for f in filenames:
                 l = League.loadData(f)
-                if not l.isFinished:
+                if not l.isFinished():
                     self.current_league = l
                 else:
                     self.previous_leagues.append(l)
@@ -79,8 +79,6 @@ class Bot:
         shouldSavePlayer = False
         leagueFinished = False
         subtype = event.get('subtype', '')
-        if subtype == u'message_changed':
-            return
 
         if ('text' in event.keys() and (
            event['text'].startswith('<@{}>'.format(self.bot_id))
@@ -125,7 +123,12 @@ class Bot:
                         else:
                             default_name = 'League ' + str(self.league_count + 1)
                             if cmd_len > 1:
-                                league_name = commands[1]
+                                league_name = ''
+                                for c in commands:
+                                    if league_name == '':
+                                        league_name = c
+                                    else:
+                                        league_name = league_name + ' ' + c
                             else:
                                 league_name = default_name
                             self.current_league = League(league_name)
@@ -136,14 +139,26 @@ class Bot:
                         self.current_league.started):
                         reply = '<@{}>, the current league is closed.'.format(userid)
                     else:
-                        self.current_league.add_player(self.confirm_player(name))
-                        shouldSave = True
-                        reply = '<@{}> you\'ve joined the current league!'.format(userid)
+                        team_name = ''
+                        for c in commands[1:]:
+                            if team_name == '':
+                                team_name = c
+                            else:
+                                team_name = team_name + ' ' + c
+                        if self.current_league.add_player(self.confirm_player(name), team_name):
+                            shouldSave = True
+                            shouldSavePlayer = True
+                            reply = '<@{}> you\'ve joined the current league!'.format(userid)
+                        else:
+                            reply = '<@{}>, you are already in this league.'.format(userid)
                 elif main_command == 'register':
-                    self.players.append(Player(name))
-                    shouldSavePlayer = True
-                    print('Player registered. {}'.format(shouldSavePlayer))
-                    reply = '<@{}>, you\'ve been registered to play.'.format(userid)
+                    if self.get_id_from_name(name):
+                        reply = '<@{}>, you are already registered to play.'.format(userid)
+                    else:
+                        self.players.append(Player(name))
+                        shouldSavePlayer = True
+                        print('Player registered. {}'.format(shouldSavePlayer))
+                        reply = '<@{}>, you\'ve been registered to play.'.format(userid)
                 elif main_command == 'help':
                     reply = 'League Bot Help Menu:\n'
                     reply += '```'
@@ -318,7 +333,7 @@ class Bot:
                                 reply = '<@{}> has challenged <@{}>!'.format(userid, opponentid)
                             else:
                                 reply = '<@{}> that user does not exist.'.format(userid)
-                elif main_command == 'save':
+                elif main_command == 'save' and name == 'stephen':
                     print('Saving...')
                     if self.checkForLeague():
                         self.current_league.saveData()
@@ -367,9 +382,11 @@ class Bot:
     def confirm_player(self, name):
         for p in self.players:
             if p.name == name:
-                p.leagues = self.current_league.name
+                p.leagues.append(self.current_league.name)
                 return name
-        self.players.append(Player(name))
+        p = Player(name)
+        p.leagues.append(self.current_league.name)
+        self.players.append(p)
         return name
 
     def get_name_from_id(self, id):

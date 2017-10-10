@@ -10,3 +10,4 @@ services:
             - ./players:/players
         environment:
             - MODE=dev
+        restart: always

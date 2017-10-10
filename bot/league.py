@@ -22,9 +22,14 @@ class League(object):
         self.games = []
         self.played = []
 
-    def add_player(self, player):
+    def add_player(self, player, teamName):
+        for p in self.players:
+            if p['name'] == player['name']:
+                return False
+
         self.players.append(dict(
             name=player,
+            team=teamName,
             wins=0,
             losses=0,
             ties=0,
@@ -33,6 +38,7 @@ class League(object):
             goalsAgainst=0,
             points=0
         ))
+        return True
 
     def start(self):
         """This creates the league with the current players, along
@@ -42,11 +48,12 @@ class League(object):
             for p in self.players:
                 for o in self.players:
                     if p['name'] != o['name']:
-                        self.games.append(dict(home=p['name'], away=o['name']))
+                        self.games.append(dict(home=p['name'] + ' ' + p['team'],
+                                               away=o['name'] + ' ' + o['team']))
         return self.started
 
     def isFinished(self):
-        if len(self.games) > 0:
+        if len(self.games) > 0 or not self.started:
             return False
         else:
             return True
@@ -104,11 +111,11 @@ class League(object):
     def show_table(self):
         table = '```'
         table += self.name + ' League Table:\n'
-        table += '{:16}:{:^5}|{:^5}|{:^5}|{:^5}|{:^5}|{:^5}|{:^5}|{:^5}\n'.format('Name', 'PL', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'PTS')
+        table += '{:36}:{:^5}|{:^5}|{:^5}|{:^5}|{:^5}|{:^5}|{:^5}|{:^5}\n'.format('Name', 'PL', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'PTS')
         table_players = sorted(self.players, key=lambda k: k['points'], reverse=True)
         for p in table_players:
             goal_differential = int(p['goalsFor']) - int(p['goalsAgainst'])
-            table += '{:16}:'.format(p['name'])
+            table += '{:36}:'.format(p['name'] + ' ' + p['team'])
             table += '{:^5}|{:^5}'.format(p['games'], p['wins'])
             table += '|{:^5}|{:^5}'.format(p['ties'], p['losses'])
             table += '|{:^5}|{:^5}'.format(p['goalsFor'], p['goalsAgainst'])
@@ -133,8 +140,8 @@ class League(object):
 
     def loadData(filename):
         with open('/leagues/' + filename) as json_data:
-            # d = json.load(json_data)
-            return jsonpickle.decode(json_data)
+            d = json.dumps(json.load(json_data))
+            return jsonpickle.decode(d)
         return League('Empty loaded league')
 
     def saveData(self):

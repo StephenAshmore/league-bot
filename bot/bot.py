@@ -283,7 +283,7 @@ class Bot:
                 elif main_command == 'challenge':
                     if cmd_len > 2:
                         # This is for win or lose:
-                        if commands[2] == 'lost':
+                        if commands[1] == 'lost':
                             if cmd_len != 4:
                                 reply = 'Whoops, the format for lost must be:\n```lost <opponent> <your score>:<opponent score> <home|away>\n```'
                             else:
@@ -310,7 +310,7 @@ class Bot:
                                     winner.win()
                                     loser.lose()
                                     reply = 'Sorry you lost <@{}>! Match recorded.'.format(userid)
-                        elif commands[2] == 'win':
+                        elif commands[1] == 'win':
                             if cmd_len != 4:
                                 reply = 'Whoops, the format for won must be:\n```won <opponent> <your score>:<opponent score> <home|away>\n```'
                             else:

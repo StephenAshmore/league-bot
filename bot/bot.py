@@ -186,30 +186,35 @@ class Bot:
                         winner = self.getPlayer(commands[1])
                         loser = self.getPlayer(name)
 
-                        if commands[2].find(':') == -1:
-                            reply = 'Whoops, the format for the scores in command lost must be:\n```<your score>:<opponent score>\n```'
+                        if not winner or not loser:
+                            reply = 'You must play a game versus someone who is registered.'
+                        elif winner == loser:
+                            reply = 'You cannot play a game against yourself.'
                         else:
-                            score = commands[2].split(':')
-                            # Need game validation here.
-                            where = ''
-                            if commands[3] == 'home':
-                                where = 'away'
+                            if commands[2].find(':') == -1:
+                                reply = 'Whoops, the format for the scores in command lost must be:\n```<your score>:<opponent score>\n```'
                             else:
-                                where = 'home'
-                            score1 = score[0]
-                            score2 = score[1]
-                            if score1 > score2:
-                                score2 = score[0]
-                                score1 = score[1]
-                            if self.checkForLeague():
-                                self.current_league.win(commands[1], name, score[1],
-                                                        score[0], where)
-                                leagueFinished = self.current_league.isFinished()
-                            winner.win()
-                            loser.lose()
-                            reply = 'Sorry you lost <@{}>! Match recorded.'.format(userid)
-                            shouldSave = True
-                            shouldSavePlayer = True
+                                score = commands[2].split(':')
+                                # Need game validation here.
+                                where = ''
+                                if commands[3] == 'home':
+                                    where = 'away'
+                                else:
+                                    where = 'home'
+                                score1 = self.limitScores(score[0])
+                                score2 = self.limitScores(score[1])
+                                if score1 > score2:
+                                    score2 = self.limitScores(score[0])
+                                    score1 = self.limitScores(score[1])
+                                if self.checkForLeague():
+                                    self.current_league.win(commands[1], name, score[1],
+                                                            score[0], where)
+                                    leagueFinished = self.current_league.isFinished()
+                                winner.win()
+                                loser.lose()
+                                reply = 'Sorry you lost <@{}>! Match recorded.'.format(userid)
+                                shouldSave = True
+                                shouldSavePlayer = True
                 elif main_command == 'won':
                     if cmd_len != 4:
                         reply = 'Whoops, the format for won must be:\n```won <opponent> <your score>:<opponent score> <home|away>\n```'
@@ -217,25 +222,29 @@ class Bot:
                         winner = self.getPlayer(name)
                         loser = self.getPlayer(commands[1])
 
-                        if commands[2].find(':') == -1:
-                            reply = 'Whoops, the format for the scores in command won must be:\n```<your score>:<opponent score>\n```'
+                        if not winner or not loser:
+                            reply = 'You must play a game versus someone who is registered.'
+                        elif winner == loser:
+                            reply = 'You cannot play a game against yourself.'
                         else:
-                            score = commands[2].split(':')
-                            # Need game validation here.
-                            score1 = score[0]
-                            score2 = score[1]
-                            if score1 < score2:
-                                score2 = score[0]
-                                score1 = score[1]
-                            if self.checkForLeague():
-                                self.current_league.win(name, commands[1], score[0],
-                                                        score[1], commands[3])
-                                leagueFinished = self.current_league.isFinished()
-                            winner.win()
-                            loser.lose()
-                            reply = 'Congrats <@{}>! Match recorded.'.format(userid)
-                            shouldSave = True
-                            shouldSavePlayer = True
+                            if commands[2].find(':') == -1:
+                                reply = 'Whoops, the format for the scores in command won must be:\n```<your score>:<opponent score>\n```'
+                            else:
+                                score = commands[2].split(':')
+                                score1 = self.limitScores(score[0])
+                                score2 = self.limitScores(score[1])
+                                if score1 < score2:
+                                    score2 = self.limitScores(score[0])
+                                    score1 = self.limitScores(score[1])
+                                if self.checkForLeague():
+                                    self.current_league.win(name, commands[1], score[0],
+                                                            score[1], commands[3])
+                                    leagueFinished = self.current_league.isFinished()
+                                winner.win()
+                                loser.lose()
+                                reply = 'Congrats <@{}>! Match recorded.'.format(userid)
+                                shouldSave = True
+                                shouldSavePlayer = True
                 elif main_command == 'tie':
                     if cmd_len != 4:
                         reply = 'Whoops, the format for tie must be:\n```tie <opponent> <your score>:<opponent score> <home|away>\n```'
@@ -243,34 +252,35 @@ class Bot:
                         winner = self.getPlayer(name)
                         loser = self.getPlayer(commands[1])
 
-                        if commands[2].find(':') == -1:
-                            reply = 'Whoops, the format for the scores in command tie must be:\n```<your score>:<opponent score>\n```'
+                        if not winner or not loser:
+                            reply = 'You must play a game versus someone who is registered.'
+                        elif winner == loser:
+                            reply = 'You cannot play a game against yourself.'
                         else:
-                            score = commands[2].split(':')
-                            # Need game validation here.
-                            score1 = score[0]
-                            score2 = score[1]
-                            if score1 < score2:
-                                score2 = score[0]
-                                score1 = score[1]
-                            if self.checkForLeague():
-                                self.current_league.tie(name, commands[1], score[0],
-                                                        score[1], commands[3])
-                                leagueFinished = self.current_league.isFinished()
-                            winner.tie()
-                            loser.tie()
-                            reply = 'Its a tie <@{}>! Match recorded.'.format(userid)
-                            shouldSave = True
-                            shouldSavePlayer = True
+                            if commands[2].find(':') == -1:
+                                reply = 'Whoops, the format for the scores in command tie must be:\n```<your score>:<opponent score>\n```'
+                            else:
+                                score = commands[2].split(':')
+                                # Need game validation here.
+                                score1 = self.limitScores(score[0])
+                                score2 = self.limitScores(score[1])
+                                if score1 < score2:
+                                    score2 = self.limitScores(score[0])
+                                    score1 = self.limitScores(score[1])
+                                if self.checkForLeague():
+                                    self.current_league.tie(name, commands[1], score[0],
+                                                            score[1], commands[3])
+                                    leagueFinished = self.current_league.isFinished()
+                                winner.tie()
+                                loser.tie()
+                                reply = 'Its a tie <@{}>! Match recorded.'.format(userid)
+                                shouldSave = True
+                                shouldSavePlayer = True
                 elif main_command == 'games':
                     if self.checkForLeague():
                         reply = self.current_league.getGames()
                     else:
                         reply = 'There is no current league to get games for. Try to make one with lb league'
-                elif main_command == 'test_register' and name == 'stephen':
-                    if self.checkForLeague():
-                        self.current_league.add_player(self.confirm_player(commands[1]), 'Test Team')
-                    reply = ''
                 elif main_command == 'profile':
                     if self.getPlayer(name):
                         reply2 = self.getPlayer(name).profile()
@@ -283,34 +293,39 @@ class Bot:
                 elif main_command == 'challenge':
                     if cmd_len > 2:
                         # This is for win or lose:
-                        if commands[1] == 'lost':
+                        if commands[2] == 'lost':
                             if cmd_len != 4:
                                 reply = 'Whoops, the format for lost must be:\n```lost <opponent> <your score>:<opponent score> <home|away>\n```'
                             else:
                                 winner = self.getPlayer(commands[1])
                                 loser = self.getPlayer(name)
 
-                                if commands[2].find(':') == -1:
-                                    reply = 'Whoops, the format for the scores in command lost must be:\n```<your score>:<opponent score>\n```'
+                                if not winner or not loser:
+                                    reply = 'You must play a game versus someone who is registered.'
+                                elif winner == loser:
+                                    reply = 'You cannot play a game against yourself.'
                                 else:
-                                    score = commands[2].split(':')
-                                    # Need game validation here.
-                                    where = ''
-                                    if commands[3] == 'home':
-                                        where = 'away'
+                                    if commands[2].find(':') == -1:
+                                        reply = 'Whoops, the format for the scores in command lost must be:\n```<your score>:<opponent score>\n```'
                                     else:
-                                        where = 'home'
-                                    score1 = score[0]
-                                    score2 = score[1]
-                                    if score1 > score2:
-                                        score2 = score[0]
-                                        score1 = score[1]
-                                    self.current_league.win(commands[1], name, score[1],
-                                                            score[0], where)
-                                    winner.win()
-                                    loser.lose()
-                                    reply = 'Sorry you lost <@{}>! Match recorded.'.format(userid)
-                        elif commands[1] == 'win':
+                                        score = commands[2].split(':')
+                                        # Need game validation here.
+                                        where = ''
+                                        if commands[3] == 'home':
+                                            where = 'away'
+                                        else:
+                                            where = 'home'
+                                        score1 = self.limitScores(score[0])
+                                        score2 = self.limitScores(score[1])
+                                        if score1 > score2:
+                                            score2 = self.limitScores(score[0])
+                                            score1 = self.limitScores(score[1])
+                                        self.current_league.win(commands[1], name, score[1],
+                                                                score[0], where)
+                                        winner.win()
+                                        loser.lose()
+                                        reply = 'Sorry you lost <@{}>! Match recorded.'.format(userid)
+                        elif commands[2] == 'win':
                             if cmd_len != 4:
                                 reply = 'Whoops, the format for won must be:\n```won <opponent> <your score>:<opponent score> <home|away>\n```'
                             else:
@@ -373,8 +388,13 @@ class Bot:
 
 #TODO: Add ability to look at previous leagues.
 
+    def limitScores(score):
+        if score > maxScore:
+            return maxScore
+        if score < 0:
+            return 0
 
-    # TODO: Get player from @name as well.
+
     def getPlayer(self, player):
         if player.startswith('@'):
             player = player[1:]

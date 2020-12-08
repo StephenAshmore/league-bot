@@ -48,8 +48,8 @@ class League(object):
             for p in self.players:
                 for o in self.players:
                     if p['name'] != o['name']:
-                        self.games.append(dict(home=p['name'] + ' ' + p['team'],
-                                               away=o['name'] + ' ' + o['team']))
+                        self.games.append(dict(home=p['name'],
+                                               away=o['name']))
         return self.started
 
     def isFinished(self):
@@ -94,14 +94,14 @@ class League(object):
             if p['name'] == winner:
                 p['ties'] += 1
                 p['games'] += 1
-                p['goalsFor'] += score1
-                p['goalsAgainst'] += score2
+                p['goalsFor'] += int(score1)
+                p['goalsAgainst'] += int(score2)
                 p['points'] += 3
             elif p['name'] == loser:
                 p['ties'] += 1
                 p['games'] += 1
-                p['goalsFor'] += score2
-                p['goalsAgainst'] += score1
+                p['goalsFor'] += int(score2)
+                p['goalsAgainst'] += int(score1)
         # Find the game in the games list and remove it.
         for i, g in self.games.items():
             if g['home'] == winner or g['away'] == winner:
